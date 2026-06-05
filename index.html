@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="生活助手">
+    <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAtElEQVR4Ae3VsQ0AIAwDwez/0b2CxsYMPMAAbBgwAAcwMEGAQMAAAwYAAHBgwDMZ+J3fO8N+VwAAAYMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAMAAAAASUVORK5CYII=">
+    <link rel="manifest" href="manifest.json">
+    <title>个人生活助手</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 登录界面 -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>🔐 个人生活助手</h1>
+                <p>请先登录以访问您的数据</p>
+            </div>
+            <div class="login-form">
+                <div class="form-group">
+                    <label>账号</label>
+                    <input type="text" id="login-account" placeholder="请输入账号">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="login-password" placeholder="请输入密码" onkeypress="if(event.key==='Enter') handleLogin()">
+                </div>
+                <button class="btn-login" onclick="handleLogin()">登录</button>
+                <p class="login-hint">首次使用将自动创建账号</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="app">
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 打卡页面 -->
+            <div id="page-habit" class="page active">
+                <div class="page-header">
+                    <h1>今日打卡</h1>
+                    <span id="today-date"></span>
+                </div>
+
+                <div class="habit-grid">
+                    <!-- 三餐打卡 -->
+                    <div class="habit-card">
+                        <div class="habit-card-header">
+                            <span class="habit-icon">🍽️</span>
+                            <h3>三餐打卡</h3>
+                            <button class="btn-detail-toggle" onclick="toggleMealDetail()">📝 详情</button>
+                        </div>
+                        
+                        <!-- 快速打卡区域 -->
+                        <div class="habit-items">
+                            <div class="habit-item" data-type="breakfast">
+                                <span class="habit-label">早餐</span>
+                                <div class="habit-check" onclick="toggleHabit('breakfast')">
+                                    <span class="check-icon"></span>
+                                </div>
+                            </div>
+                            <div class="habit-item" data-type="lunch">
+                                <span class="habit-label">午餐</span>
+                                <div class="habit-check" onclick="toggleHabit('lunch')">
+                                    <span class="check-icon"></span>
+                                </div>
+                            </div>
+                            <div class="habit-item" data-type="dinner">
+                                <span class="habit-label">晚餐</span>
+                                <div class="habit-check" onclick="toggleHabit('dinner')">
+                                    <span class="check-icon"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 详细信息输入区域 -->
+                        <div id="meal-detail-panel" class="meal-detail-panel" style="display: none;">
+                            <div class="meal-detail-tabs">
+                                <button class="meal-tab active" onclick="switchMealTab('breakfast')">早餐</button>
+                                <button class="meal-tab" onclick="switchMealTab('lunch')">午餐</button>
+                                <button class="meal-tab" onclick="switchMealTab('dinner')">晚餐</button>
+                            </div>
+                            
+                            <div class="meal-detail-form">
+                                <div class="detail-row">
+                                    <label>💰 价格</label>
+                                    <input type="number" id="meal-price" placeholder="0.00" step="0.01">
+                                </div>
+                                <div class="detail-row">
+                                    <label>⏰ 时间</label>
+                                    <input type="time" id="meal-time">
+                                </div>
+                                <div class="detail-row">
+                                    <label>🍜 内容</label>
+                                    <input type="text" id="meal-content" placeholder="吃了什么...">
+                                </div>
+                                <div class="detail-row">
+                                    <label>🏪 来源</label>
+                                    <div class="source-selector">
+                                        <button class="source-btn active" data-source="canteen" onclick="selectSource('canteen')">食堂</button>
+                                        <button class="source-btn" data-source="delivery" onclick="selectSource('delivery')">外卖</button>
+                                        <button class="source-btn" data-source="cook" onclick="selectSource('cook')">自己做</button>
+                                        <button class="source-btn" data-source="other" onclick="selectSource('other')">其他</button>
+                                    </div>
+                                </div>
+                                <button class="btn-save-meal" onclick="saveMealDetail()">保存</button>
+                            </div>
+                        </div>
+
+                        <div class="habit-streak">今日花费 <span class="streak-count" id="total-meal-expense">¥0</span></div>
+                    </div>
+
+                    <!-- 运动打卡 -->
+                    <div class="habit-card">
+                        <div class="habit-card-header">
+                            <span class="habit-icon">🏃</span>
+                            <h3>运动打卡</h3>
+                        </div>
+
+                        <!-- 日常打卡区域 -->
+                        <div class="exercise-section">
+                            <div class="section-title">📅 日常打卡</div>
+                            <div class="daily-exercise-list" id="daily-exercise-list">
+                                <div class="empty-hint">点击下方按钮添加日常运动</div>
+                            </div>
+                            <button class="btn-add-exercise" onclick="showAddDailyExercise()">+ 添加日常运动</button>
+                        </div>
+
+                        <!-- 即时运动区域 -->
+                        <div class="exercise-section">
+                            <div class="section-title">⚡ 即时运动</div>
+                            <div class="instant-exercise-form">
+                                <div class="form-row">
+                                    <input type="text" id="instant-exercise-name" placeholder="运动名称">
+                                    <input type="number" id="instant-exercise-duration" placeholder="时长(分钟)">
+                                </div>
+                                <div class="form-row">
+                                    <input type="number" id="instant-exercise-calories" placeholder="消耗热量(kcal)">
+                                    <input type="time" id="instant-exercise-time">
+                                </div>
+                                <button class="btn-add-instant" onclick="addInstantExercise()">记录即时运动</button>
+                            </div>
+                            <div class="instant-exercise-list" id="instant-exercise-list"></div>
+                        </div>
+
+                        <!-- 今日运动统计 -->
+                        <div class="exercise-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">总时长</span>
+                                <span class="stat-value" id="total-exercise-duration">0分钟</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">总消耗</span>
+                                <span class="stat-value" id="total-exercise-calories">0 kcal</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 添加日常运动弹窗 -->
+                    <div id="daily-exercise-modal" class="modal">
+                        <div class="modal-content small-modal">
+                            <div class="modal-header">
+                                <h3>添加日常运动</h3>
+                                <button class="btn-close" onclick="closeDailyExerciseModal()">×</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label>运动名称</label>
+                                    <input type="text" id="daily-exercise-name" placeholder="例如：俯卧撑">
+                                </div>
+                                <div class="form-group">
+                                    <label>目标时长（分钟/天）</label>
+                                    <input type="number" id="daily-exercise-target" placeholder="30">
+                                </div>
+                                <div class="form-group">
+                                    <label>预计消耗（kcal/天）</label>
+                                    <input type="number" id="daily-exercise-calories" placeholder="200">
+                                </div>
+                                <button class="btn-submit" onclick="saveDailyExercise()">保存</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 睡眠打卡 -->
+                    <div class="habit-card">
+                        <div class="habit-card-header">
+                            <span class="habit-icon">😴</span>
+                            <h3>睡眠打卡</h3>
+                            <button class="btn-detail-toggle" onclick="toggleSleepDetail()">📝 详情</button>
+                        </div>
+
+                        <!-- 快速打卡区域 -->
+                        <div class="habit-items">
+                            <div class="habit-item" data-type="sleep">
+                                <span class="habit-label">睡眠</span>
+                                <div class="habit-check" onclick="toggleSleep()">
+                                    <span class="check-icon"></span>
+                                </div>
+                            </div>
+                            <div class="habit-detail-input">
+                                <input type="number" placeholder="睡眠时长（小时）" id="sleep-duration">
+                            </div>
+                        </div>
+
+                        <!-- 详细睡眠记录面板 -->
+                        <div id="sleep-detail-panel" class="sleep-detail-panel" style="display: none;">
+                            <!-- 睡眠时间设置 -->
+                            <div class="sleep-time-settings">
+                                <div class="sleep-time-row">
+                                    <div class="sleep-time-input">
+                                        <label>🌙 计划入睡</label>
+                                        <input type="time" id="planned-sleep-time" value="23:00">
+                                    </div>
+                                    <div class="sleep-time-input">
+                                        <label>☀️ 计划起床</label>
+                                        <input type="time" id="planned-wake-time" value="07:00">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 晚上入睡打卡 -->
+                            <div class="sleep-section">
+                                <div class="section-title">🌙 晚上入睡</div>
+                                <div class="sleep-check-row">
+                                    <div class="sleep-check-item">
+                                        <span>是否按时入睡</span>
+                                        <div class="habit-check small" onclick="toggleSleepCheck('onTime')">
+                                            <span class="check-icon"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="sleep-late-reason" class="sleep-reason" style="display: none;">
+                                    <label>晚睡原因</label>
+                                    <input type="text" id="late-reason" placeholder="为什么会晚睡...">
+                                </div>
+                                <div class="sleep-check-row">
+                                    <div class="sleep-time-input small">
+                                        <label>实际入睡时间</label>
+                                        <input type="time" id="actual-sleep-time">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 早晨起床打卡 -->
+                            <div class="sleep-section">
+                                <div class="section-title">☀️ 早晨起床</div>
+                                <div class="sleep-check-row">
+                                    <div class="sleep-check-item">
+                                        <span>是否按时起床</span>
+                                        <div class="habit-check small" onclick="toggleSleepCheck('wakeOnTime')">
+                                            <span class="check-icon"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="sleep-check-row">
+                                    <div class="sleep-check-item">
+                                        <span>是否赖床</span>
+                                        <div class="habit-check small" onclick="toggleSleepCheck('overslept')">
+                                            <span class="check-icon"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="sleep-oversleep-reason" class="sleep-reason" style="display: none;">
+                                    <label>赖床原因</label>
+                                    <input type="text" id="oversleep-reason" placeholder="为什么会赖床...">
+                                </div>
+                                <div class="sleep-check-row">
+                                    <div class="sleep-check-item">
+                                        <span>是否早醒</span>
+                                        <div class="habit-check small" onclick="toggleSleepCheck('wokeEarly')">
+                                            <span class="check-icon"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="sleep-early-reason" class="sleep-reason" style="display: none;">
+                                    <label>早醒原因</label>
+                                    <input type="text" id="early-reason" placeholder="为什么会早醒...">
+                                </div>
+                                <div class="sleep-check-row">
+                                    <div class="sleep-time-input small">
+                                        <label>实际起床时间</label>
+                                        <input type="time" id="actual-wake-time">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 睡眠统计 -->
+                            <div class="sleep-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">实际睡眠</span>
+                                    <span class="stat-value" id="actual-sleep-duration">--</span>
+                                </div>
+                            </div>
+
+                            <button class="btn-save-sleep" onclick="saveSleepDetail()">保存记录</button>
+                        </div>
+
+                        <div class="habit-streak">连续 <span class="streak-count">0</span> 天</div>
+                    </div>
+                </div>
+
+                <div class="week-view">
+                    <h4>本周打卡</h4>
+                    <div class="week-days" id="week-days"></div>
+                </div>
+            </div>
+
+            <!-- 记账页面 -->
+            <div id="page-account" class="page">
+                <div class="page-header">
+                    <h1>记账本</h1>
+                    <div class="balance">
+                        <span>余额</span>
+                        <span class="balance-amount" id="total-balance">¥0.00</span>
+                    </div>
+                </div>
+
+                <div class="account-summary">
+                    <div class="summary-item income">
+                        <span class="summary-label">收入</span>
+                        <span class="summary-amount" id="total-income">¥0.00</span>
+                    </div>
+                    <div class="summary-item expense">
+                        <span class="summary-label">支出</span>
+                        <span class="summary-amount" id="total-expense">¥0.00</span>
+                    </div>
+                </div>
+
+                <div class="account-tabs">
+                    <button class="account-tab active" data-tab="list">账单</button>
+                    <button class="account-tab" data-tab="add">记一笔</button>
+                </div>
+
+                <div id="account-list" class="account-content active">
+                    <div class="record-list" id="record-list">
+                        <div class="empty-state">
+                            <span class="empty-icon">📝</span>
+                            <p>暂无记账记录</p>
+                            <p class="empty-hint">点击「记一笔」开始记账</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="account-add" class="account-content">
+                    <div class="form-group">
+                        <label>金额</label>
+                        <input type="number" id="record-amount" placeholder="0.00" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>类型</label>
+                        <div class="type-selector">
+                            <button class="type-btn active" data-type="expense">支出</button>
+                            <button class="type-btn" data-type="income">收入</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>分类</label>
+                        <div class="category-grid" id="category-grid"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>日期</label>
+                        <input type="date" id="record-date">
+                    </div>
+                    <div class="form-group">
+                        <label>备注</label>
+                        <input type="text" id="record-note" placeholder="添加备注...">
+                    </div>
+                    <button class="btn-submit" onclick="addRecord()">保存</button>
+                </div>
+            </div>
+
+            <!-- 日记页面 -->
+            <div id="page-diary" class="page">
+                <div class="page-header">
+                    <h1>📔 日记</h1>
+                    <button class="btn-new-diary" onclick="showNewDiary('personal')">写日记</button>
+                </div>
+
+                <!-- 个人日记区域 -->
+                <div class="diary-section">
+                    <div class="diary-list" id="diary-list">
+                        <div class="empty-state">
+                            <span class="empty-icon">📔</span>
+                            <p>还没有日记</p>
+                            <p class="empty-hint">点击「写日记」开始记录</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 编辑弹窗 -->
+                <div id="diary-modal" class="modal">
+                    <div class="modal-content diary-editor">
+                        <div class="editor-header">
+                            <div class="editor-header-left">
+                                <span class="editor-type-label" id="editor-type-label">📔 个人日记</span>
+                            </div>
+                            <div class="editor-header-right">
+                                <input type="date" id="diary-date">
+                                <button class="btn-close" onclick="closeDiaryModal()">×</button>
+                            </div>
+                        </div>
+                        <div class="editor-toolbar">
+                            <button onclick="formatText('bold')"><b>B</b></button>
+                            <button onclick="formatText('italic')"><i>I</i></button>
+                            <button onclick="formatText('underline')"><u>U</u></button>
+                            <span class="separator">|</span>
+                            <button onclick="formatText('insertUnorderedList')">•</button>
+                            <button onclick="formatText('insertOrderedList')">1.</button>
+                            <span class="separator">|</span>
+                            <button onclick="setHeading(1)">H1</button>
+                            <button onclick="setHeading(2)">H2</button>
+                        </div>
+                        <div class="editor-body" id="diary-editor" contenteditable="true" placeholder="今天发生了什么..."></div>
+                        <div class="editor-footer">
+                            <button class="btn-save-diary" onclick="saveDiary()">保存</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计页面 -->
+            <div id="page-stats" class="page">
+                <div class="page-header">
+                    <h1>数据统计</h1>
+                </div>
+
+                <div class="stats-section">
+                    <h3>打卡统计</h3>
+                    <div class="stats-cards">
+                        <div class="stats-card">
+                            <span class="stats-icon">🍽️</span>
+                            <span class="stats-label">三餐完成率</span>
+                            <span class="stats-value" id="stats-meals">0%</span>
+                        </div>
+                        <div class="stats-card">
+                            <span class="stats-icon">🏃</span>
+                            <span class="stats-label">运动完成率</span>
+                            <span class="stats-value" id="stats-exercise">0%</span>
+                        </div>
+                        <div class="stats-card">
+                            <span class="stats-icon">😴</span>
+                            <span class="stats-label">睡眠完成率</span>
+                            <span class="stats-value" id="stats-sleep">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-section">
+                    <h3>消费统计</h3>
+                    <div class="expense-chart" id="expense-chart"></div>
+                </div>
+
+                <div class="stats-section">
+                    <h3>记录统计</h3>
+                    <div class="diary-stats">
+                        <div class="diary-stat-item">
+                            <span>💼 工作记录</span>
+                            <span id="total-diaries">0</span>
+                        </div>
+                        <div class="diary-stat-item">
+                            <span>📔 个人日记</span>
+                            <span id="personal-diaries">0</span>
+                        </div>
+                        <div class="diary-stat-item">
+                            <span>📅 本月记录</span>
+                            <span id="monthly-diaries">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 工作页面 -->
+            <div id="page-work" class="page">
+                <div class="page-header">
+                    <h1>💼 工作</h1>
+                </div>
+
+                <!-- 工作安排区域 -->
+                <div class="work-section">
+                    <div class="section-header">
+                        <h3>📋 工作安排</h3>
+                        <button class="btn-section-add" onclick="showNewDiary('work')">写安排</button>
+                    </div>
+                    <div class="work-list" id="work-list-page">
+                        <div class="empty-state">
+                            <span class="empty-icon">📋</span>
+                            <p>暂无工作安排</p>
+                            <p class="empty-hint">点击「写安排」开始记录</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 下班打卡区域 -->
+                <div class="work-section">
+                    <div class="section-header">
+                        <h3>🏢 下班打卡</h3>
+                    </div>
+                    
+                    <!-- 标准下班时间 -->
+                    <div class="standard-time">
+                        <span>标准下班时间：</span>
+                        <strong>18:30</strong>
+                    </div>
+
+                    <!-- 下班打卡卡片 -->
+                    <div class="workoff-card">
+                        <div class="workoff-info">
+                            <div class="workoff-date" id="workoff-date">今日</div>
+                            <div class="workoff-status" id="workoff-status">未打卡</div>
+                        </div>
+                        
+                        <div class="workoff-form" id="workoff-form" style="display: none;">
+                            <div class="workoff-time-row">
+                                <div class="form-group">
+                                    <label>实际下班时间</label>
+                                    <input type="time" id="actual-workoff-time" value="18:30">
+                                </div>
+                            </div>
+                            <div class="workoff-check">
+                                <div class="check-item">
+                                    <span>是否按时下班</span>
+                                    <div class="habit-check small" onclick="toggleWorkoffCheck('onTime')">
+                                        <span class="check-icon"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="overtime-reason-panel" class="overtime-reason" style="display: none;">
+                                <label>加班原因</label>
+                                <textarea id="overtime-reason" placeholder="为什么会加班..."></textarea>
+                            </div>
+                            <button class="btn-save-workoff" onclick="saveWorkoff()">保存打卡</button>
+                        </div>
+                        
+                        <button class="btn-workoff" id="btn-workoff" onclick="showWorkoffForm()">下班打卡</button>
+                    </div>
+
+                    <!-- 历史记录 -->
+                    <div class="workoff-history">
+                        <h4>打卡记录</h4>
+                        <div id="workoff-history-list">
+                            <div class="empty-hint">暂无打卡记录</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 工作统计 -->
+                <div class="work-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">本周准时率</span>
+                        <span class="stat-value" id="workoff-on-time-rate">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">本月加班次数</span>
+                        <span class="stat-value" id="monthly-overtime-count">0</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 底部导航 -->
+        <nav class="tab-bar">
+            <button class="tab-btn active" data-page="habit">
+                <span class="tab-icon">✓</span>
+                <span class="tab-label">打卡</span>
+            </button>
+            <button class="tab-btn" data-page="account">
+                <span class="tab-icon">💰</span>
+                <span class="tab-label">记账</span>
+            </button>
+            <button class="tab-btn" data-page="diary">
+                <span class="tab-icon">📔</span>
+                <span class="tab-label">日记</span>
+            </button>
+            <button class="tab-btn" data-page="work">
+                <span class="tab-icon">💼</span>
+                <span class="tab-label">工作</span>
+            </button>
+            <button class="tab-btn" data-page="stats">
+                <span class="tab-icon">📊</span>
+                <span class="tab-label">统计</span>
+            </button>
+        </nav>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
