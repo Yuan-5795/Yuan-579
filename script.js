@@ -4,7 +4,9 @@ const STORAGE_KEYS = {
     RECORDS: 'life-account-data',
     DIARIES: 'life-diary-data',
     SYNC: 'life-sync-config',
-    AUTH: 'life-auth-data'
+    AUTH: 'life-auth-data',
+    REMEMBER: 'life-remember-account',
+    PEOPLE: 'life-people-data'
 };
 
 // 简单的哈希函数（用于密码存储）
@@ -25,10 +27,18 @@ let authData = null;
 function handleLogin() {
     const account = document.getElementById('login-account').value.trim();
     const password = document.getElementById('login-password').value;
+    const rememberAccount = document.getElementById('remember-account').checked;
     
     if (!account || !password) {
         alert('请输入账号和密码');
         return;
+    }
+    
+    // 保存记住账号设置
+    if (rememberAccount) {
+        localStorage.setItem(STORAGE_KEYS.REMEMBER, account);
+    } else {
+        localStorage.removeItem(STORAGE_KEYS.REMEMBER);
     }
     
     authData = JSON.parse(localStorage.getItem(STORAGE_KEYS.AUTH));
@@ -62,13 +72,26 @@ function showMainApp() {
 // 页面加载时检查登录状态
 function checkAuth() {
     authData = JSON.parse(localStorage.getItem(STORAGE_KEYS.AUTH));
+    const rememberedAccount = localStorage.getItem(STORAGE_KEYS.REMEMBER);
+    
     if (authData) {
         // 已有账号，显示登录界面
         document.getElementById('login-screen').classList.remove('hidden');
-        document.getElementById('login-account').value = authData.account;
+        // 自动填充记住的账号
+        if (rememberedAccount) {
+            document.getElementById('login-account').value = rememberedAccount;
+            document.getElementById('remember-account').checked = true;
+        } else {
+            document.getElementById('login-account').value = authData.account;
+        }
     } else {
         // 无账号，同样显示登录界面让用户创建
         document.getElementById('login-screen').classList.remove('hidden');
+        // 如果有记住的账号，也填充
+        if (rememberedAccount) {
+            document.getElementById('login-account').value = rememberedAccount;
+            document.getElementById('remember-account').checked = true;
+        }
     }
 }
 
@@ -85,6 +108,7 @@ const CATEGORIES = {
         { id: 'medical', icon: '💊', name: '医疗' },
         { id: 'education', icon: '📚', name: '教育' },
         { id: 'housing', icon: '🏠', name: '住房' },
+        { id: 'smoking', icon: '🚬', name: '抽烟' },
         { id: 'other', icon: '📦', name: '其他' }
     ],
     income: [
@@ -100,6 +124,8 @@ const CATEGORIES = {
 let habitsData = {};
 let accountData = { records: [], balance: 0 };
 let diaryData = { work: [], personal: [] };
+let peopleData = [];
+let currentPersonId = null;
 let currentRecordType = 'expense';
 let selectedCategory = null;
 let editingDiaryId = null;
@@ -127,6 +153,8 @@ function init() {
     updateExerciseStats();
     renderWorkoffHistory();
     updateWorkoffStats();
+    loadPeopleData();
+    updatePersonSelector();
 }
 
 // 数据加载与保存
@@ -143,6 +171,7 @@ function loadAllData() {
         diaryData = { work: [], personal: [] };
     }
     workoffData = JSON.parse(localStorage.getItem('life-workoff-data')) || [];
+    peopleData = JSON.parse(localStorage.getItem(STORAGE_KEYS.PEOPLE)) || [];
 }
 
 function saveHabits() {
@@ -155,6 +184,10 @@ function saveAccount() {
 
 function saveDiaries() {
     localStorage.setItem(STORAGE_KEYS.DIARIES, JSON.stringify(diaryData));
+}
+
+function savePeople() {
+    localStorage.setItem(STORAGE_KEYS.PEOPLE, JSON.stringify(peopleData));
 }
 
 function getDefaultHabits() {
@@ -426,6 +459,11 @@ function initAccountTabs() {
             
             document.querySelectorAll('.account-content').forEach(c => c.classList.remove('active'));
             document.getElementById(`account-${tabName}`).classList.add('active');
+            
+            // 如果是人际 tab，渲染人物列表
+            if (tabName === 'people') {
+                renderPeopleList();
+            }
         });
     });
     
@@ -861,6 +899,7 @@ function addRecord() {
     const amount = parseFloat(document.getElementById('record-amount').value);
     const date = document.getElementById('record-date').value;
     const note = document.getElementById('record-note').value;
+    const personId = document.getElementById('record-person').value;
     
     if (!amount || amount <= 0) {
         alert('请输入有效金额');
@@ -873,6 +912,7 @@ function addRecord() {
     }
     
     const category = CATEGORIES[currentRecordType].find(c => c.id === selectedCategory);
+    const person = personId ? peopleData.find(p => p.id === personId) : null;
     
     const record = {
         id: Date.now(),
@@ -882,7 +922,9 @@ function addRecord() {
         categoryName: category.name,
         categoryIcon: category.icon,
         date: date,
-        note: note
+        note: note,
+        personId: personId || null,
+        personName: person ? person.name : null
     };
     
     accountData.records.unshift(record);
@@ -941,7 +983,8 @@ function renderRecords() {
             <div class="record-icon ${record.type}-color">${record.categoryIcon}</div>
             <div class="record-info">
                 <div class="record-category">${record.categoryName}</div>
-                <div class="record-note">${record.note || formatDate(record.date)}</div>
+                <div class="record-note">${record.note || ''}</div>
+                <div class="record-date">${formatDate(record.date)}</div>
             </div>
             <div>
                 <span class="record-amount ${record.type}">
@@ -1379,6 +1422,389 @@ function renderExpenseChart() {
             </div>
         `;
     }).join('');
+}
+
+// ==================== 数据同步功能 ====================
+
+// 同步配置
+let syncConfig = null;
+
+// 加载同步配置
+function loadSyncConfig() {
+    syncConfig = JSON.parse(localStorage.getItem(STORAGE_KEYS.SYNC));
+    if (syncConfig) {
+        document.getElementById('sync-token').value = syncConfig.token || '';
+        document.getElementById('sync-gist-id').value = syncConfig.gistId || '';
+    }
+}
+
+// 显示同步模态框
+function showSyncModal() {
+    document.getElementById('sync-modal').classList.add('active');
+    loadSyncConfig();
+}
+
+// 关闭同步模态框
+function closeSyncModal() {
+    document.getElementById('sync-modal').classList.remove('active');
+}
+
+// 显示同步状态
+function showSyncStatus(message, type) {
+    const statusEl = document.getElementById('sync-status');
+    statusEl.textContent = message;
+    statusEl.className = 'sync-status ' + type;
+}
+
+// 收集所有数据
+function collectAllData() {
+    return {
+        habits: habitsData,
+        account: accountData,
+        diary: diaryData,
+        workoff: workoffData,
+        people: peopleData,
+        auth: authData,
+        timestamp: new Date().toISOString()
+    };
+}
+
+// 上传数据到 GitHub Gist
+async function uploadData() {
+    const token = document.getElementById('sync-token').value.trim();
+    const gistId = document.getElementById('sync-gist-id').value.trim();
+    
+    if (!token) {
+        showSyncStatus('请输入 GitHub Token', 'error');
+        return;
+    }
+    
+    showSyncStatus('正在上传...', 'loading');
+    
+    try {
+        const allData = collectAllData();
+        const gistData = {
+            description: '个人生活助手数据备份',
+            public: false,
+            files: {
+                'life-assistant-data.json': {
+                    content: JSON.stringify(allData, null, 2)
+                }
+            }
+        };
+        
+        let response;
+        if (gistId) {
+            // 更新现有 Gist
+            response = await fetch(`https://api.github.com/gists/${gistId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(gistData)
+            });
+        } else {
+            // 创建新 Gist
+            response = await fetch('https://api.github.com/gists', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(gistData)
+            });
+        }
+        
+        if (!response.ok) {
+            throw new Error('上传失败：' + response.statusText);
+        }
+        
+        const result = await response.json();
+        const newGistId = result.id;
+        
+        // 保存同步配置
+        syncConfig = {
+            token: token,
+            gistId: newGistId,
+            lastSync: new Date().toISOString()
+        };
+        localStorage.setItem(STORAGE_KEYS.SYNC, JSON.stringify(syncConfig));
+        
+        // 更新 Gist ID 显示
+        document.getElementById('sync-gist-id').value = newGistId;
+        
+        showSyncStatus('上传成功！Gist ID: ' + newGistId, 'success');
+    } catch (error) {
+        showSyncStatus('上传失败：' + error.message, 'error');
+    }
+}
+
+// 从 GitHub Gist 下载数据
+async function downloadData() {
+    const token = document.getElementById('sync-token').value.trim();
+    const gistId = document.getElementById('sync-gist-id').value.trim();
+    
+    if (!token || !gistId) {
+        showSyncStatus('请输入 GitHub Token 和 Gist ID', 'error');
+        return;
+    }
+    
+    showSyncStatus('正在下载...', 'loading');
+    
+    try {
+        const response = await fetch(`https://api.github.com/gists/${gistId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('下载失败：' + response.statusText);
+        }
+        
+        const result = await response.json();
+        const file = result.files['life-assistant-data.json'];
+        
+        if (!file) {
+            throw new Error('找不到数据文件');
+        }
+        
+        const data = JSON.parse(file.content);
+        
+        // 恢复数据
+        if (data.habits) {
+            habitsData = data.habits;
+            localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(habitsData));
+        }
+        
+        if (data.account) {
+            accountData = data.account;
+            localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(accountData));
+        }
+        
+        if (data.diary) {
+            diaryData = data.diary;
+            localStorage.setItem(STORAGE_KEYS.DIARIES, JSON.stringify(diaryData));
+        }
+        
+        if (data.workoff) {
+            workoffData = data.workoff;
+            localStorage.setItem('life-workoff-data', JSON.stringify(workoffData));
+        }
+        
+        if (data.people) {
+            peopleData = data.people;
+            localStorage.setItem(STORAGE_KEYS.PEOPLE, JSON.stringify(peopleData));
+        }
+        
+        // 保存同步配置
+        syncConfig = {
+            token: token,
+            gistId: gistId,
+            lastSync: new Date().toISOString()
+        };
+        localStorage.setItem(STORAGE_KEYS.SYNC, JSON.stringify(syncConfig));
+        
+        // 刷新页面显示
+        renderHabits();
+        renderAccountRecords();
+        renderWorkEntriesPage();
+        renderPersonalDiaries();
+        renderWorkoffHistory();
+        updateWorkoffStats();
+        updateStats();
+        updatePersonSelector();
+        
+        showSyncStatus('下载成功！数据已恢复', 'success');
+    } catch (error) {
+        showSyncStatus('下载失败：' + error.message, 'error');
+    }
+}
+
+// ==================== 人际账本功能 ====================
+
+// 加载人物数据
+function loadPeopleData() {
+    peopleData = JSON.parse(localStorage.getItem(STORAGE_KEYS.PEOPLE)) || [];
+}
+
+// 更新人物选择器
+function updatePersonSelector() {
+    const selector = document.getElementById('record-person');
+    if (!selector) return;
+    
+    selector.innerHTML = '<option value="">无</option>' + 
+        peopleData.map(person => `<option value="${person.id}">${person.name}</option>`).join('');
+}
+
+// 显示添加人物模态框
+function showAddPersonModal() {
+    document.getElementById('add-person-modal').classList.add('active');
+    document.getElementById('person-name').value = '';
+    document.getElementById('person-relation').value = '';
+}
+
+// 关闭添加人物模态框
+function closeAddPersonModal() {
+    document.getElementById('add-person-modal').classList.remove('active');
+}
+
+// 添加人物
+function addPerson() {
+    const name = document.getElementById('person-name').value.trim();
+    const relation = document.getElementById('person-relation').value.trim();
+    
+    if (!name) {
+        alert('请输入人物姓名');
+        return;
+    }
+    
+    const person = {
+        id: Date.now().toString(),
+        name: name,
+        relation: relation,
+        createdAt: new Date().toISOString()
+    };
+    
+    peopleData.push(person);
+    savePeople();
+    updatePersonSelector(); // 更新选择器（很重要！）
+    closeAddPersonModal();
+    renderPeopleList();
+}
+
+// 渲染人物列表
+function renderPeopleList() {
+    const summaryEl = document.getElementById('people-summary');
+    const listEl = document.getElementById('people-list');
+    
+    if (!summaryEl || !listEl) return;
+    
+    // 计算总盈亏
+    let totalOweMe = 0;  // 别人欠我的
+    let totalIOwe = 0;    // 我欠别人的
+    
+    peopleData.forEach(person => {
+        const balance = calculatePersonBalance(person.id);
+        if (balance > 0) {
+            totalOweMe += balance;
+        } else {
+            totalIOwe += Math.abs(balance);
+        }
+    });
+    
+    // 渲染汇总
+    summaryEl.innerHTML = `
+        <div class="people-summary-item owe-me">
+            <span class="people-summary-label">别人欠我</span>
+            <span class="people-summary-value positive">¥${totalOweMe.toFixed(2)}</span>
+        </div>
+        <div class="people-summary-item i-owe">
+            <span class="people-summary-label">我欠别人</span>
+            <span class="people-summary-value negative">¥${totalIOwe.toFixed(2)}</span>
+        </div>
+    `;
+    
+    // 渲染人物列表
+    if (peopleData.length === 0) {
+        listEl.innerHTML = `
+            <div class="empty-state">
+                <span class="empty-icon">👥</span>
+                <p>暂无人物</p>
+                <p class="empty-hint">点击「添加人物」开始记录</p>
+            </div>
+        `;
+        return;
+    }
+    
+    listEl.innerHTML = peopleData.map(person => {
+        const balance = calculatePersonBalance(person.id);
+        const balanceClass = balance >= 0 ? 'positive' : 'negative';
+        const statusText = balance > 0 ? '欠我' : (balance < 0 ? '我欠' : '平');
+        const statusColor = balance >= 0 ? '#059669' : '#dc2626';
+        
+        return `
+            <div class="person-item" onclick="showPersonDetail('${person.id}')">
+                <div class="person-info">
+                    <span class="person-name">${person.name}</span>
+                    <span class="person-relation">${person.relation || '无关系'}</span>
+                </div>
+                <div class="person-balance">
+                    <div class="person-balance-amount ${balanceClass}" style="color: ${statusColor}">
+                        ${balance >= 0 ? '+' : ''}¥${balance.toFixed(2)}
+                    </div>
+                    <div class="person-balance-status">${statusText}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 计算某人物的净盈亏
+function calculatePersonBalance(personId) {
+    let balance = 0;
+    
+    accountData.records.forEach(record => {
+        if (record.personId === personId) {
+            if (record.type === 'expense') {
+                // 我付钱给别人 = 别人欠我
+                balance += record.amount;
+            } else {
+                // 别人付钱给我 = 我欠别人
+                balance -= record.amount;
+            }
+        }
+    });
+    
+    return balance;
+}
+
+// 显示人物详情
+function showPersonDetail(personId) {
+    const person = peopleData.find(p => p.id === personId);
+    if (!person) return;
+    
+    currentPersonId = personId;
+    
+    const balance = calculatePersonBalance(personId);
+    const balanceClass = balance >= 0 ? 'positive' : 'negative';
+    const statusText = balance > 0 ? '欠你的' : (balance < 0 ? '你欠的' : '已结清');
+    
+    document.getElementById('person-detail-title').textContent = person.name + ' 的账目';
+    document.getElementById('person-detail-balance').innerHTML = `
+        <div class="person-detail-balance-amount ${balanceClass}" style="color: ${balance >= 0 ? '#059669' : '#dc2626'}">
+            ${balance >= 0 ? '+' : ''}¥${balance.toFixed(2)}
+        </div>
+        <div class="person-detail-balance-status">${statusText}</div>
+    `;
+    
+    // 渲染该人物的所有记录
+    const records = accountData.records.filter(r => r.personId === personId);
+    const recordsEl = document.getElementById('person-detail-records');
+    
+    if (records.length === 0) {
+        recordsEl.innerHTML = '<div class="empty-hint">暂无相关记录</div>';
+    } else {
+        recordsEl.innerHTML = records.map(record => `
+            <div class="person-record-item">
+                <div class="person-record-info">
+                    <div class="person-record-note">${record.note || record.categoryName}</div>
+                    <div class="person-record-date">${formatDate(record.date)}</div>
+                </div>
+                <div class="person-record-amount ${record.type}">
+                    ${record.type === 'income' ? '+' : '-'}¥${record.amount.toFixed(2)}
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    document.getElementById('person-detail-modal').classList.add('active');
+}
+
+// 关闭人物详情模态框
+function closePersonDetailModal() {
+    document.getElementById('person-detail-modal').classList.remove('active');
 }
 
 // 启动应用

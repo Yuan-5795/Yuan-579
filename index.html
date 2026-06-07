@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="生活助手">
-    <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAtElEQVR4Ae3VsQ0AIAwDwez/0b2CxsYMPMAAbBgwAAcwMEGAQMAAAwYAAHBgwDMZ+J3fO8N+VwAAAYMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAMAAAAASUVORK5CYII=">
+    <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAtElEQVR4Ae3VsQ0AIAwDwez/0b2CxsYMPMAAbBgwAAcwMEGAQMAAAwYAAHBgwDMZ+J3fO8N+VwAAAYMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAGMYAA8YMBgF4D4aATt6jYAAMAAAAASUVORK5CYII=">
     <link rel="manifest" href="manifest.json">
     <title>个人生活助手</title>
     <link rel="stylesheet" href="style.css">
@@ -28,6 +28,10 @@
                 <div class="form-group">
                     <label>密码</label>
                     <input type="password" id="login-password" placeholder="请输入密码" onkeypress="if(event.key==='Enter') handleLogin()">
+                </div>
+                <div class="remember-account">
+                    <input type="checkbox" id="remember-account" checked>
+                    <label for="remember-account">记住账号</label>
                 </div>
                 <button class="btn-login" onclick="handleLogin()">登录</button>
                 <p class="login-hint">首次使用将自动创建账号</p>
@@ -331,6 +335,7 @@
 
                 <div class="account-tabs">
                     <button class="account-tab active" data-tab="list">账单</button>
+                    <button class="account-tab" data-tab="people">人际</button>
                     <button class="account-tab" data-tab="add">记一笔</button>
                 </div>
 
@@ -368,7 +373,22 @@
                         <label>备注</label>
                         <input type="text" id="record-note" placeholder="添加备注...">
                     </div>
+                    <div class="form-group">
+                        <label>对象（可选）</label>
+                        <select id="record-person" class="person-selector">
+                            <option value="">无</option>
+                        </select>
+                    </div>
                     <button class="btn-submit" onclick="addRecord()">保存</button>
+                </div>
+
+                <!-- 人际账本页面 -->
+                <div id="account-people" class="account-content">
+                    <div class="people-header">
+                        <button class="btn-add-person" onclick="showAddPersonModal()">+ 添加人物</button>
+                    </div>
+                    <div class="people-summary" id="people-summary"></div>
+                    <div class="people-list" id="people-list"></div>
                 </div>
             </div>
 
@@ -582,7 +602,81 @@
                 <span class="tab-icon">📊</span>
                 <span class="tab-label">统计</span>
             </button>
+            <button class="tab-btn" onclick="showSyncModal()">
+                <span class="tab-icon">🔄</span>
+                <span class="tab-label">同步</span>
+            </button>
         </nav>
+    </div>
+
+    <!-- 同步配置模态框 -->
+    <div id="sync-modal" class="modal">
+        <div class="modal-content sync-modal-content">
+            <div class="modal-header">
+                <h2>🔄 数据同步</h2>
+                <button class="btn-close" onclick="closeSyncModal()">×</button>
+            </div>
+            <div class="sync-body">
+                <div class="sync-info">
+                    <p>使用 GitHub Gist 实现跨设备数据同步</p>
+                    <p class="sync-hint">数据将保存在您的私有 Gist 中，只有您能访问</p>
+                </div>
+                
+                <div class="sync-form">
+                    <div class="form-group">
+                        <label>GitHub Token</label>
+                        <input type="text" id="sync-token" placeholder="输入您的 GitHub Personal Access Token">
+                        <p class="form-hint">需要 gist 权限，<a href="https://github.com/settings/tokens/new" target="_blank">点击创建</a></p>
+                    </div>
+                    <div class="form-group">
+                        <label>Gist ID（首次同步后自动生成）</label>
+                        <input type="text" id="sync-gist-id" placeholder="留空首次创建，已有则输入">
+                    </div>
+                </div>
+                
+                <div class="sync-actions">
+                    <button class="btn-sync btn-upload" onclick="uploadData()">⬆️ 上传数据</button>
+                    <button class="btn-sync btn-download" onclick="downloadData()">⬇️ 下载数据</button>
+                </div>
+                
+                <div class="sync-status" id="sync-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加人物模态框 -->
+    <div id="add-person-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>添加人物</h2>
+                <button class="btn-close" onclick="closeAddPersonModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>姓名</label>
+                    <input type="text" id="person-name" placeholder="输入人物姓名">
+                </div>
+                <div class="form-group">
+                    <label>关系（可选）</label>
+                    <input type="text" id="person-relation" placeholder="如：同事、朋友、客户">
+                </div>
+                <button class="btn-submit" onclick="addPerson()">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 人物账目详情模态框 -->
+    <div id="person-detail-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="person-detail-title">人物账目</h2>
+                <button class="btn-close" onclick="closePersonDetailModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="person-detail-balance" id="person-detail-balance"></div>
+                <div class="person-detail-records" id="person-detail-records"></div>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>

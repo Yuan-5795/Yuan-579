@@ -124,6 +124,26 @@ body {
     margin-top: 16px;
 }
 
+.remember-account {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: var(--gray-600);
+}
+
+.remember-account input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.remember-account label {
+    cursor: pointer;
+    user-select: none;
+}
+
 .app {
     max-width: 430px;
     margin: 0 auto;
@@ -910,7 +930,14 @@ body {
 
 .record-note {
     font-size: 13px;
+    color: var(--gray-700);
+    margin-top: 2px;
+}
+
+.record-date {
+    font-size: 12px;
     color: var(--gray-500);
+    margin-top: 2px;
 }
 
 .record-amount {
@@ -1406,6 +1433,317 @@ body {
 
 .workoff-history {
     margin-top: 16px;
+}
+
+/* 同步功能样式 */
+.sync-modal-content {
+    max-width: 400px;
+}
+
+.sync-body {
+    padding: 20px;
+}
+
+.sync-info {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.sync-info p {
+    margin: 8px 0;
+    color: var(--gray-600);
+}
+
+.sync-hint {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.sync-form {
+    margin-bottom: 20px;
+}
+
+.sync-form .form-group {
+    margin-bottom: 16px;
+}
+
+.sync-form label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 6px;
+}
+
+.sync-form input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.sync-form .form-hint {
+    font-size: 12px;
+    color: var(--gray-500);
+    margin-top: 4px;
+}
+
+.sync-form .form-hint a {
+    color: var(--primary);
+}
+
+.sync-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.btn-sync {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-upload {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-download {
+    background: var(--success);
+    color: white;
+}
+
+.sync-status {
+    text-align: center;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.sync-status.success {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.sync-status.error {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.sync-status.loading {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+/* 人际账本样式 */
+.people-header {
+    margin-bottom: 16px;
+}
+
+.btn-add-person {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.people-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.people-summary-item {
+    flex: 1;
+    text-align: center;
+    padding: 16px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.people-summary-item.owe-me {
+    border-left: 4px solid #059669;
+}
+
+.people-summary-item.i-owe {
+    border-left: 4px solid #dc2626;
+}
+
+.people-summary-item.total {
+    border-left: 4px solid #667eea;
+}
+
+.people-summary-label {
+    display: block;
+    font-size: 12px;
+    color: var(--gray-500);
+    margin-bottom: 4px;
+}
+
+.people-summary-value {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.people-summary-value.positive {
+    color: #059669;
+}
+
+.people-summary-value.negative {
+    color: #dc2626;
+}
+
+.people-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.person-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+}
+
+.person-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.person-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.person-relation {
+    font-size: 13px;
+    color: var(--gray-500);
+}
+
+.person-balance {
+    text-align: right;
+}
+
+.person-balance-amount {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.person-balance-amount.positive {
+    color: #059669;
+}
+
+.person-balance-amount.negative {
+    color: #dc2626;
+}
+
+.person-balance-status {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+/* 人物详情模态框 */
+.person-detail-balance {
+    text-align: center;
+    padding: 20px;
+    background: var(--gray-50);
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+
+.person-detail-balance-amount {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.person-detail-balance-amount.positive {
+    color: #059669;
+}
+
+.person-detail-balance-amount.negative {
+    color: #dc2626;
+}
+
+.person-detail-balance-status {
+    font-size: 14px;
+    color: var(--gray-500);
+}
+
+.person-detail-records {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.person-record-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.person-record-item:last-child {
+    border-bottom: none;
+}
+
+.person-record-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.person-record-note {
+    font-size: 14px;
+    color: var(--gray-700);
+}
+
+.person-record-date {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.person-record-amount {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.person-record-amount.expense {
+    color: #dc2626;
+}
+
+.person-record-amount.income {
+    color: #059669;
+}
+
+/* 人物选择器 */
+.person-selector {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
 }
 
 .workoff-history h4 {
